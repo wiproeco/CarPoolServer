@@ -1,0 +1,7 @@
+{
+    "HOST"       : "https://carpoolaccount.documents.azure.com:443/",
+    "AUTH_KEY"   : "t3HO/HgLTcdvyRvstRjlUOZpzw+kLSYoqOUu9uQbgdzxJXCJ2IWVBN08wz56i+szyWQW2SW/RQpShCnQWmFKgw==",
+    "DATABASE"   : "WiproCarpool",
+    "COLLECTION" : "users"
+    
+}
