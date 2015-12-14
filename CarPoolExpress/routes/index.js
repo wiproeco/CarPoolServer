@@ -1,6 +1,7 @@
  
  // import the modules we will use
 var DocumentDBClient = require('documentdb').DocumentClient;
+var nodemailer = require('nodemailer');
 var nconf = require('nconf');
 
 // tell nconf which config file to use
@@ -22,7 +23,7 @@ var client = new DocumentDBClient(host, { masterKey: authKey });
  var express = require('express');
  var router = express.Router();
  
- 
+
  
   router.get('/listusers', function(request, response, next) {   
     readOrCreateDatabase(function (database) {
@@ -123,7 +124,8 @@ router.post('/register',function (request, response) {
     });
     
     
-    
+
+
     
    var checkitemforlocation = function(request,collection,callback){  
   // console.log(request.body);
@@ -304,5 +306,8 @@ var readOrCreateCollection = function (database, callback) {
         }
     });
 };
+
+
+
 
  module.exports = router;

@@ -1,0 +1,52 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+  <title>Carpool Confirmation</title>
+  <meta charset="utf-8">
+  <meta name="viewport" content="width=device-width, initial-scale=1">
+  <link rel="stylesheet" href="http://maxcdn.bootstrapcdn.com/bootstrap/3.3.5/css/bootstrap.min.css">
+  <script src="https://ajax.googleapis.com/ajax/libs/jquery/1.11.3/jquery.min.js"></script>
+  <script src="http://maxcdn.bootstrapcdn.com/bootstrap/3.3.5/js/bootstrap.min.js"></script>
+  <script src="http://ajax.googleapis.com/ajax/libs/angularjs/1.4.8/angular.min.js"></script>
+</head>
+<body>
+  <div ng-app="myApp" ng-controller="customersCtrl">
+    <div class="panel panel-primary">
+        <div class="panel-heading">Carpool Request</div>
+        <div class="panel-body">
+          <h3>Confirm the Car pool availability</h3>
+      <div class="container">
+        <button type="button" class="btn btn-primary btn-md" ng-disabled="clicked" ng-click="acknowlege(true)">Accept</button>    
+        <button type="button" class="btn btn-primary btn-md" ng-disabled="clicked" ng-click="acknowlege(false)">Reject</button>
+      </div>
+      </div>
+      </div>
+    </div>
+    
+</body>
+</html>
+
+<script>
+var app = angular.module('myApp', []);
+app.controller('customersCtrl', function($scope, $http) {
+$scope.acknowlege = function(isAccepted){
+  var emailBody = "";
+  $scope.clicked = false;
+  if(isAccepted)
+  {
+    emailBody = 'Hi Ramesh,<br/><p>Your request has been Accepted by Sushil. <br/> <br/> <b> Vehicle Details </b> <br/> Car Owner: Sushil <br/> Car No: TS 09 1234 <br/> Pickup Location: Begumpeta<br/> Drop Location: Wipro Ltd.  <p>Regards,<br/>Car Pool App Admin.';
+  }
+  else{
+    emailBody = 'Hi Ramesh,<br/><p>Your Car pool request has been Rejected.  <br/><br/> Thanks for choosing Carpool services. <p><br/>Regards,<br/>Car Pool App Admin.';
+  }
+  
+  var req = {from : "wiprocarpool@gmail.com",to : "sreerama.tedla@wipro.com",subject : "Car pool request status",text:emailBody};
+
+    $http.post('http://carpooltestapp.azurewebsites.net/send', req,            
+                    {headers: { 'Content-Type': 'application/json'}})    
+    $scope.clicked = true;
+}
+           
+
+});
+</script>
