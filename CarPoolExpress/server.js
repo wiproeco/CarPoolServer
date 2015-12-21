@@ -10,6 +10,6 @@ var server = app.listen(app.get('port'), function() {
 });
 
 
-var appsocket = require('./appsocket');
-var x=appsocket.CreateSocketPort();
+// var appsocket = require('./appsocket');
+// var x=appsocket.CreateSocketPort();
 
