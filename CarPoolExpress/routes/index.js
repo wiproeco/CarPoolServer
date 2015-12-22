@@ -167,7 +167,7 @@ var getAllRideDetails = function(request,collection,callback){
                          
                           passengerDetails.userName =  request.body.userName ;
                           passengerDetails.boardingid = request.body.boardingid;
-                          passengerDetails.userId =  request.body.userId;
+                          passengerDetails.userid =  request.body.userId;
                           passengerDetails.status = "pending"; 
                            if(currentRide.passengers == undefined){ 
                                         currentRide.passengers = [];
@@ -186,7 +186,7 @@ var getAllRideDetails = function(request,collection,callback){
                         } 
                         else
                         {
-                            // console.log("update successful");
+                            response.json({ "success" : "New ride successfully created."});
                         }
                     });   
                   }
@@ -278,8 +278,17 @@ var getAllRideDetails = function(request,collection,callback){
                                 }
                                                      
                             var docLink='dbs/' + databaseId + '/colls/' + collectionId + '/docs/'+docs[0].id;
-                            client.replaceDocument(docLink, docs[0], function (err, updated) {
-                      });                   
+                            
+                        client.replaceDocument(docLink, docs[0], function (err, updated) {
+                            if (err) 
+                            {
+                                throw (err);
+                            } 
+                            else
+                            {
+                                response.json({ "success" : "Updated the route details"});
+                            }
+                        });                 
                     }                
                });
              }
@@ -311,12 +320,20 @@ var getAllRideDetails = function(request,collection,callback){
                     }
                     else
                     {                            
-                            docs[0].username = "Dharmendra";
+                            //docs[0].username = "Dharmendra";
                             //console.log(docs[0]);
                             var docLink='dbs/' + databaseId + '/colls/' + collectionId + '/docs/'+docs[0].id;
+                            
                             client.replaceDocument(docLink, docs[0], function (err, updated) {
-                                
-                            });
+                            if (err) 
+                            {
+                                throw (err);
+                            } 
+                            else
+                            {
+                                response.json({ "success" : "Updated the ride details"});
+                            }
+                        });
                       //console.log('done');
                     }                
                });
@@ -325,37 +342,6 @@ var getAllRideDetails = function(request,collection,callback){
     });
     });
     
-    router.post('/updatetest',function (request, response) {   
-    readOrCreateDatabase(function (database) {
-        readOrCreateCollection(database, function (collection) {              
-             if (request.body) {               
-                checkitem(request,collection,function(docs)
-                {                    
-                    if (docs == undefined || docs == null || docs.length == 0 || (docs.length == 1 && docs[0] == ""))
-                    {                       
-                         response.end('No user exists with that id'); 
-                    }
-                    else
-                    {                            
-                            docs[0].username = "Dharmendra1";
-                            docs[0].rides = [];
-                            docs[0].rides.push({"source" : "secunderabad", "destination" : "wipro"});
-                            //console.log(docs[0]);
-                            var docLink='dbs/' + databaseId + '/colls/' + collectionId + '/docs/'+docs[0].id;
-                            client.replaceDocument(docLink, docs[0], function (err, updated) {
-                                
-                            });
-                      //console.log('done');
-                    }                
-               });
-             }
-    });
-    });
-    });
-    
-    
-    
-
  var authenticateUser = function (request,collection, callback) {   
     var query ='SELECT r.id,r.isowner FROM root r WHERE r.email="'+request.params.email+'" and r.password="'+request.params.password+'"'
     client.queryDocuments(collection._self,query).toArray(function (err, docs) {
@@ -565,7 +551,15 @@ router.post('/cancelride',function (request, response) {
                             
                             var docLink='dbs/' + databaseId + '/colls/' + collectionId + '/docs/'+docs[0].id;
                             client.replaceDocument(docLink, docs[0], function (err, updated) {
-                      });
+                            if (err) 
+                            {
+                                throw (err);
+                            } 
+                            else
+                            {
+                                response.json({ "success" : "Cancel the ride"});
+                            }
+                        });
                      // console.log('done');
                     }                
                });
@@ -690,7 +684,15 @@ router.post('/rideconfirmation',function (request, response) {
                             
                             var docLink='dbs/' + databaseId + '/colls/' + collectionId + '/docs/'+docs[0].id;
                             client.replaceDocument(docLink, docs[0], function (err, updated) {
-                      });
+                            if (err) 
+                            {
+                                throw (err);
+                            } 
+                            else
+                            {
+                                response.json({ "success" : "Confrimed the ride request"});
+                            }
+                        });
                      // console.log('done');
                     }                
                });
