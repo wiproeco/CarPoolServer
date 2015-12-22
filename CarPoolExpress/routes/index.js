@@ -51,7 +51,8 @@ var client = new DocumentDBClient(host, { masterKey: authKey });
  
  var getrideDetails = function(request,collection,callback){ 
   
-  var query ='SELECT u.rides,u.userName,u.carNo,r.startpoint,r.endpoint,r.seatsavailable FROM users u join r in u.rides WHERE u.id="'+request.params.userid+'" and r.rideid="'+request.params.rideid+'"';   
+  var query ='SELECT u.userName,u.carNo,r.rideid,r.startpoint,r.startlat,r.startlng,r.endpoint,r.endlat,'+
+  ' r.endlng,r.startdatetime,r.enddatetime,r.ridestatus,r.seatsavailable,r.isfavouiteride,r.boardingpoints,r.passengers FROM users u join r in u.rides WHERE u.id="'+request.params.userid+'" and r.rideid="'+request.params.rideid+'"';   
     client.queryDocuments(collection._self,query).toArray(function (err, docs) {
         if (err) {
             throw (err);
@@ -60,6 +61,7 @@ var client = new DocumentDBClient(host, { masterKey: authKey });
         callback(docs);
     });
 }
+
 
 var getAllRideDetails = function(request,collection,callback){  
   var query ='SELECT u.id,u.userName,u.rides FROM users u WHERE u.id="'+request.params.userid+'"';
@@ -166,7 +168,7 @@ var getAllRideDetails = function(request,collection,callback){
                           passengerDetails.userName =  request.body.userName ;
                           passengerDetails.boardingid = request.body.boardingid;
                           passengerDetails.userId =  request.body.userId;
-                          passengerDetails.status = "Pending"; 
+                          passengerDetails.status = "pending"; 
                            if(currentRide.passengers == undefined){ 
                                         currentRide.passengers = [];
                            }
@@ -554,9 +556,9 @@ router.post('/cancelride',function (request, response) {
                             /* TODO :   DO R&D on conditional docLink-Conditional replacement*/
                             for(var i=0;i<docs[0].rides.length;i++)
                             {
-                               if(docs[0].rides[i].ridestatus=="open" && docs[0].rides[i].startdatetime.indexOf(request.body.startdatetime) > -1)
+                               if(docs[0].rides[i].ridestatus=="open" && docs[0].rides[i].rideid == request.body.rideid)
                                {
-                                docs[0].rides[i].ridestatus ="close";
+                                    docs[0].rides[i].ridestatus ="close";
                                 // console.log(docs[0].rides[i].rideid);
                                }
                             }     
@@ -658,7 +660,7 @@ var receivenotitifications =  function (request,collection,callback) {
 }
 
 router.post('/rideconfirmation',function (request, response) { 
-      
+      response.header("Access-Control-Allow-Origin", '*');  
     readOrCreateDatabase(function (database) {
         readOrCreateCollection(database, function (collection) {              
              if (request.body) {
@@ -677,7 +679,7 @@ router.post('/rideconfirmation',function (request, response) {
                                {
                                    for(var j=0; j<docs[0].rides[i].passengers.length; j++)
                                    {
-                                       if(docs[0].rides[i].passengers[j].userid == request.body.userid && docs[0].rides[i].passengers[j].Status == "pending")
+                                       if(docs[0].rides[i].passengers[j].userid == request.body.userid)
                                        {
                                            docs[0].rides[i].passengers[j].Status = request.body.status;
                                            //console.log(docs[0].rides[i].passengers[j].Status);
