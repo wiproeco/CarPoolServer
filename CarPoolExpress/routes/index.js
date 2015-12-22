@@ -163,7 +163,7 @@ var getAllRideDetails = function(request,collection,callback){
                         if( carOwnerDocument[0].rides[i].rideid== request.body.rideid)
                         {
                           var currentRide = carOwnerDocument[0].rides[i];                                                                                                               
-                          var passengerDetails={ "userName" : null, "status" : null,"boardingid":null,"userId":null };                          
+                          var passengerDetails={ "userName" : null, "status" : null,"boardingid":null,"userid":null };                          
                          
                           passengerDetails.userName =  request.body.userName ;
                           passengerDetails.boardingid = request.body.boardingid;
@@ -600,7 +600,7 @@ var getNotifications =  function (request,collection,callback) {
          var userid =request.params.userid;
          var startdatetime =request.params.startdatetime;
         
-       query =  'SELECT u.id as ownerid,r.rideid,p.userid as passengerid,p.userName as passengername,p.Status, b.address, b.lat, b.lng, r.startdatetime' +
+       query =  'SELECT u.id as ownerid,r.rideid,p.userid as passengerid,p.userName as passengername,p.status, b.address, b.lat, b.lng, r.startdatetime' +
                 ' FROM users u '+ 
                 ' join r in u.rides '+ 
                 ' join p in r.passengers '+ 
@@ -643,7 +643,7 @@ var receivenotitifications =  function (request,collection,callback) {
          var userid =request.params.userid;
          //var startdatetime =request.params.startdatetime;
         
-       query =  'SELECT u.id as ownerid,u.userName as ownername, r.rideid,r.startdatetime,p.Status FROM users u join r in u.rides join p in r.passengers ' + 
+       query =  'SELECT u.id as ownerid,u.userName as ownername, r.rideid,r.startdatetime,p.status FROM users u join r in u.rides join p in r.passengers ' + 
         'where r.ridestatus = "open" and p.userid = "' + userid +'"';    
         //and contains(r.startdatetime,"'+ startdatetime + '")       
      }
