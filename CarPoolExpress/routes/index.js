@@ -696,7 +696,7 @@ router.post('/rideconfirmation',function (request, response) {
                                    {
                                        if(docs[0].rides[i].passengers[j].userid == request.body.userid)
                                        {
-                                           docs[0].rides[i].passengers[j].Status = request.body.status;
+                                           docs[0].rides[i].passengers[j].status = request.body.status;
                                            //console.log(docs[0].rides[i].passengers[j].Status);
                                        }
                                    }
