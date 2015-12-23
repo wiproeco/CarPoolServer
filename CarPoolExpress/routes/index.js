@@ -153,6 +153,13 @@ var getAllRideDetails = function(request,collection,callback){
  router.post('/joinride',function(request, response, next) {   
     readOrCreateDatabase(function (database) {
         readOrCreateCollection(database, function (collection) {   
+            var username ='';
+            getuserbyid(request,collection, function (docs) {
+                // console.log(docs); 
+                  if(docs != undefined && docs != null){
+                          username = docs[0].userName;     
+                  }
+            
             joinARide(request,collection, function (docs) {                                 
                 var carOwnerDocument =  docs;              
                 if(carOwnerDocument != undefined){
@@ -165,8 +172,8 @@ var getAllRideDetails = function(request,collection,callback){
                           var currentRide = carOwnerDocument[0].rides[i];                                                                                                               
                           var passengerDetails={ "userName" : null, "status" : null,"boardingid":null,"userid":null };                          
                          
-                          passengerDetails.userName =  request.body.userName ;
-                          passengerDetails.boardingid = request.body.boardingid;
+                          passengerDetails.userName =   username ;
+                          passengerDetails.boardingid = parseInt(request.body.boardingid);
                           passengerDetails.userid =  request.body.userId;
                           passengerDetails.status = "pending"; 
                            if(currentRide.passengers == undefined){ 
@@ -198,6 +205,7 @@ var getAllRideDetails = function(request,collection,callback){
                     response.json({ "error" : "No user exist with this id." })
                 }
             });    
+        });
         });
      });   
  });   
@@ -375,7 +383,20 @@ var getCarOwners = function(request,collection,callback){
     });
 }
 
+var getuserbyid = function(request,collection,callback){  
+   var query ='SELECT r.userName FROM root r WHERE r.id="'+request.body.userId+'"';
+    client.queryDocuments(collection._self,query).toArray(function (err, docs) {
+        if (err) {
+            throw (err);
+        }       
+       // console.log('0');        
+        callback(docs);
+    });
+}
+
+
 var joinARide= function(request,collection,callback){  
+    //console.log(request.body.carownerId);
     var query = 'select * from root r where r.id="'+request.body.carownerId+'"';
  client.queryDocuments(collection._self,query).toArray(function (err, docs) {
         if (err) {
