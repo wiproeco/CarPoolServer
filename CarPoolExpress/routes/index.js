@@ -594,14 +594,58 @@ router.post('/cancelride',function (request, response) {
   router.get('/getnotitifications/:userid/:startdatetime', function(request, response, next) {  
       response.header("Access-Control-Allow-Origin", '*');  
     readOrCreateDatabase(function (database) {
-        readOrCreateCollection(database, function (collection) {           
-                getNotifications(request,collection, function (docs) {  
-                response.json(docs);          
+        readOrCreateCollection(database, function (collection) {      
+             var userid="";
+             var passengerDetails = "";     
+                getNotifications(request,collection, function (docs) {
+                    var ownerDetails= docs;  
+                     for(var i=0; i< ownerDetails.length; i++){
+                         if(i>0){
+                          userid= userid +"\",\""+ ownerDetails[i].passengerid; 
+                         }
+                         else{
+                        userid= ownerDetails[i].passengerid;    
+                         }
+                     } 
+             getPassengerDetails(userid,collection, function (docs) {
+                               passengerDetails = docs;
+                               for(var i=0; i< passengerDetails.length; i++){
+                                   ownerDetails[i].mobile= passengerDetails[i].mobile;
+                               }
+                                   response.json(ownerDetails);
+                          });
             });    
         });
      });
+  
+  });
    
-  });    
+   
+var getPassengerDetails =  function (userid,collection,callback) {
+    var query =""; 
+     
+     if (userid == "undefined") 
+     {
+          callback('');
+     }
+     else
+     {
+       query =  'SELECT u.id as ownerid,u.userName as passengername,u.mobile'+
+                ' FROM users u '+ 
+                ' where u.id in ("'+userid +'")';           
+     }
+                
+    //console.log(query);
+    
+    client.queryDocuments(collection._self,query).toArray(function (err, docs) {
+        if (err) {
+            throw (err);
+        } 
+        
+        callback(docs);
+    });
+}
+
     
 var getNotifications =  function (request,collection,callback) {
     var query =""; 
@@ -658,7 +702,7 @@ var receivenotitifications =  function (request,collection,callback) {
          var userid =request.params.userid;
          //var startdatetime =request.params.startdatetime;
         
-       query =  'SELECT u.id as ownerid,u.userName as ownername, r.rideid,r.startdatetime,p.status FROM users u join r in u.rides join p in r.passengers ' + 
+       query =  'SELECT u.id as ownerid,u.userName as ownername,u.mobile, r.rideid,r.startdatetime,p.status FROM users u join r in u.rides join p in r.passengers ' + 
         'where r.ridestatus = "open" and p.userid = "' + userid +'"';    
         //and contains(r.startdatetime,"'+ startdatetime + '")       
      }
