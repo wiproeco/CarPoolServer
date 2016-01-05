@@ -351,7 +351,7 @@ var getAllRideDetails = function(request,collection,callback){
     });
     
  var authenticateUser = function (request,collection, callback) {   
-    var query ='SELECT r.id,r.isowner FROM root r WHERE r.email="'+request.params.email+'" and r.password="'+request.params.password+'"'
+    var query ='SELECT r.id,r.isowner,r.userName FROM root r WHERE r.email="'+request.params.email+'" and r.password="'+request.params.password+'"'
     client.queryDocuments(collection._self,query).toArray(function (err, docs) {
         if (err) {
             throw (err);
