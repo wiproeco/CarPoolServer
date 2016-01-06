@@ -177,6 +177,7 @@ var getAllRideDetails = function(request,collection,callback){
                           passengerDetails.boardingid = parseInt(request.body.boardingid);
                           passengerDetails.userid =  request.body.userId;
                           passengerDetails.status = "pending"; 
+                          passengerDetails.reqforcurrgeolocn = request.body.reqforcurrgeolocn;
                            if(currentRide.passengers == undefined){ 
                                         currentRide.passengers = [];
                            }
@@ -660,7 +661,7 @@ var getNotifications =  function (request,collection,callback) {
          var userid =request.params.userid;
          var startdatetime =request.params.startdatetime;
         
-       query =  'SELECT u.id as ownerid,r.rideid,p.userid as passengerid,p.userName as passengername,u.photo,p.status, b.address, b.lat, b.lng, r.startdatetime' +
+       query =  'SELECT u.id as ownerid,r.rideid,p.userid as passengerid,p.userName as passengername,u.photo,p.status, p.reqforcurrgeolocn, b.address, b.lat, b.lng, r.startdatetime' +
                 ' FROM users u '+ 
                 ' join r in u.rides '+ 
                 ' join p in r.passengers '+ 
@@ -703,7 +704,7 @@ var receivenotitifications =  function (request,collection,callback) {
          var userid =request.params.userid;
          //var startdatetime =request.params.startdatetime;
         
-       query =  'SELECT u.id as ownerid,u.userName as ownername,u.mobile,u.photo, r.rideid,r.startdatetime,p.status FROM users u join r in u.rides join p in r.passengers ' + 
+       query =  'SELECT u.id as ownerid,u.userName as ownername,u.mobile,u.photo, r.rideid,r.startdatetime,p.status, p.isownercurrentlocnallowed FROM users u join r in u.rides join p in r.passengers ' + 
         'where r.ridestatus = "open" and p.userid = "' + userid +'"';    
         //and contains(r.startdatetime,"'+ startdatetime + '")       
      }
@@ -742,6 +743,7 @@ router.post('/rideconfirmation',function (request, response) {
                                        if(docs[0].rides[i].passengers[j].userid == request.body.userid)
                                        {
                                            docs[0].rides[i].passengers[j].status = request.body.status;
+                                            docs[0].rides[i].passengers[j].isownercurrentlocnallowed = request.body.reqforcurrgeolocn;                       
                                            //console.log(docs[0].rides[i].passengers[j].Status);
                                        }
                                    }
@@ -809,4 +811,62 @@ var readOrCreateErrorLogCollection = function (database, callback) {
 };
 
 
+router.get('/getuserdetails/:userid',function(request, response, next){  
+    readOrCreateDatabase(function (database) {
+        readOrCreateCollection(database, function (collection) {           
+                getuserDetails(request,collection, function (docs) { 
+               response.json(docs);              
+            });    
+        });
+     });
+ });
+ 
+ var getuserDetails = function(request,collection,callback){ 
+  
+  var query ='SELECT * FROM users u WHERE u.id="'+request.params.userid+'"';   
+    client.queryDocuments(collection._self,query).toArray(function (err, docs) {
+        if (err) {
+            throw (err);
+        }     
+          
+        callback(docs);
+    });
+}
+ 
+ router.post('/updatecarlocation',function (request, response) {       
+        
+    readOrCreateDatabase(function (database) {
+        readOrCreateCollection(database, function (collection) {              
+             if (request.body) {               
+                checkitemforlocation(request,collection,function(docs)
+                {                    
+                    if (docs == undefined || docs == null || docs.length == 0 || (docs.length == 1 && docs[0] == ""))
+                    {                       
+                         response.end('No user exists with that id'); 
+                    }
+                    else
+                    {        
+                        docs[0].currgeolocnaddress=request.body.currgeolocnaddress;
+                        docs[0].currgeolocnlat=request.body.currgeolocnlat; 
+                        docs[0].currgeolocnlong = request.body.currgeolocnlong;
+                                                    
+                        var docLink='dbs/' + databaseId + '/colls/' + collectionId + '/docs/'+docs[0].id;
+                        
+                        client.replaceDocument(docLink, docs[0], function (err, updated) {
+                            if (err) 
+                            {
+                                throw (err);
+                            } 
+                            else
+                            {
+                                 response.json({ "success" : "Current location updated successfully."});
+                            }
+                        });                 
+                    }                
+               });
+             }
+    });
+    });
+    });
+    
  module.exports = router;
