@@ -14,6 +14,7 @@ var host = nconf.get("HOST");
 var authKey = nconf.get("AUTH_KEY");
 var databaseId = nconf.get("DATABASE");
 var collectionId = nconf.get("COLLECTION");
+var logCollectionId = nconf.get("ErrorLogCollection"); 
 
 
 
@@ -702,7 +703,7 @@ var receivenotitifications =  function (request,collection,callback) {
          var userid =request.params.userid;
          //var startdatetime =request.params.startdatetime;
         
-       query =  'SELECT u.id as ownerid,u.userName as ownername,u.mobile, r.rideid,r.startdatetime,p.status FROM users u join r in u.rides join p in r.passengers ' + 
+       query =  'SELECT u.id as ownerid,u.userName as ownername,u.mobile,u.photo, r.rideid,r.startdatetime,p.status FROM users u join r in u.rides join p in r.passengers ' + 
         'where r.ridestatus = "open" and p.userid = "' + userid +'"';    
         //and contains(r.startdatetime,"'+ startdatetime + '")       
      }
@@ -767,6 +768,45 @@ router.post('/rideconfirmation',function (request, response) {
     });
 });
 
+
+
+router.post('/getLoghandler',function(request,response){  
+        readOrCreateDatabase(function (database) {
+            readOrCreateErrorLogCollection(database, function (logCollectionId) {
+                if (request.body) {
+                    var item = request.body;                    
+                    client.createDocument(logCollectionId._self, item, function (error, doc) {
+                        if (error) {
+                            //console.log('Error occured during operation: ', error);
+                            throw error;
+                        }
+                        response.end('Error logged Successully', doc);                       
+                    });
+                }
+            });
+        });       
+ });
+
+ // if the collection does not exist for the database provided, create it, else return the collection object
+var readOrCreateErrorLogCollection = function (database, callback) {
+    //console.log(collectionId);
+    client.queryCollections(database._self, 'SELECT * FROM root r WHERE r.id="' + logCollectionId + '"').toArray(function (err, results) {
+        if (err) {
+            // some error occured, rethrow up
+            throw (err);
+        }           
+        if (!err && results.length === 0) {
+            // no error occured, but there were no results returned 
+            //indicating no collection exists in the provided database matching the query
+            client.createCollection(database._self, { id: logCollectionId }, function (err, createdCollection) {
+                callback(createdCollection);
+            });
+        } else {
+            // we found a collection
+            callback(results[0]);
+        }
+    });
+};
 
 
  module.exports = router;
