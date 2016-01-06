@@ -660,7 +660,7 @@ var getNotifications =  function (request,collection,callback) {
          var userid =request.params.userid;
          var startdatetime =request.params.startdatetime;
         
-       query =  'SELECT u.id as ownerid,r.rideid,p.userid as passengerid,p.userName as passengername,p.status, b.address, b.lat, b.lng, r.startdatetime' +
+       query =  'SELECT u.id as ownerid,r.rideid,p.userid as passengerid,p.userName as passengername,u.photo,p.status, b.address, b.lat, b.lng, r.startdatetime' +
                 ' FROM users u '+ 
                 ' join r in u.rides '+ 
                 ' join p in r.passengers '+ 
