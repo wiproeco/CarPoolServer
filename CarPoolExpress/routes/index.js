@@ -593,33 +593,50 @@ router.post('/cancelride',function (request, response) {
 });
     
     
-  router.get('/getnotitifications/:userid/:startdatetime', function(request, response, next) {  
+  router.get('/getnotitifications/:userid/:startdatetime/:latitude/:longitude', function(request, response, next) {  
       response.header("Access-Control-Allow-Origin", '*');  
-    readOrCreateDatabase(function (database) {
-        readOrCreateCollection(database, function (collection) {      
-             var userid="";
-             var passengerDetails = "";     
-                getNotifications(request,collection, function (docs) {
-                    var ownerDetails= docs;  
-                     for(var i=0; i< ownerDetails.length; i++){
-                         if(i>0){
-                          userid= userid +"\",\""+ ownerDetails[i].passengerid; 
-                         }
-                         else{
+    readOrCreateDatabase(function (database) 
+    {
+        readOrCreateCollection(database, function (collection) 
+        {      
+            var userid="";
+            var passengerDetails = "";     
+            getNotifications(request,collection, function (docs) 
+            {
+                var ownerDetails= docs;  
+                for(var i=0; i< ownerDetails.length; i++)
+                {
+                    if(i>0)
+                    {
+                        userid= userid +"\",\""+ ownerDetails[i].passengerid; 
+                    }
+                    else
+                    {
                         userid= ownerDetails[i].passengerid;    
-                         }
-                     } 
-             getPassengerDetails(userid,collection, function (docs) {
-                               passengerDetails = docs;
-                               for(var i=0; i< passengerDetails.length; i++){
-                                   ownerDetails[i].mobile= passengerDetails[i].mobile;
-                               }
-                                   response.json(ownerDetails);
-                          });
-            });    
+                    }
+                } 
+                getPassengerDetails(userid,collection, function (docs) 
+                {
+                    passengerDetails = docs;
+                    for(var i=0; i< passengerDetails.length; i++)
+                    {
+                        ownerDetails[i].mobile= passengerDetails[i].mobile;
+                    }
+                    response.json(ownerDetails);
+                });
+            });
+
+            request.body.userid =request.params.userid;                
+            request.body.currgeolocnlat=request.params.latitude;
+            request.body.currgeolocnlong=request.params.longitude;
+            updateCarlocationstatus(request,collection,function(message)
+            {
+                // var x=message;
+                // response.json({ "success" : message});
+            });   
         });
-     });
-  
+    });
+
   });
    
    
@@ -833,40 +850,52 @@ router.get('/getuserdetails/:userid',function(request, response, next){
     });
 }
  
- router.post('/updatecarlocation',function (request, response) {       
-        
-    readOrCreateDatabase(function (database) {
-        readOrCreateCollection(database, function (collection) {              
-             if (request.body) {               
-                checkitemforlocation(request,collection,function(docs)
+ router.post('/updatecarlocation',function (request, response) 
+ {      
+    readOrCreateDatabase(function (database) 
+    {
+        readOrCreateCollection(database, function (collection) 
+        {              
+             if (request.body) 
+             {   
+                 updateCarlocationstatus(request,collection,function(message)
+                 {
+                     var x=message;
+                     response.json({ "success" : message});
+                 });           
+           
+             }
+        });
+    });
+ });
+    
+ var updateCarlocationstatus = function(request,collection,callback){
+         checkitemforlocation(request,collection,function(docs1)
                 {                    
-                    if (docs == undefined || docs == null || docs.length == 0 || (docs.length == 1 && docs[0] == ""))
+                    if (docs1 == undefined || docs1 == null || docs1.length == 0 || (docs1.length == 1 && docs1[0] == ""))
                     {                       
-                         response.end('No user exists with that id'); 
+                         callback("error", 'No user exists with that id'); 
                     }
                     else
                     {        
-                        docs[0].currgeolocnaddress=request.body.currgeolocnaddress;
-                        docs[0].currgeolocnlat=request.body.currgeolocnlat; 
-                        docs[0].currgeolocnlong = request.body.currgeolocnlong;
+                        docs1[0].currgeolocnaddress=request.body.currgeolocnaddress;
+                        docs1[0].currgeolocnlat=request.body.currgeolocnlat; 
+                        docs1[0].currgeolocnlong = request.body.currgeolocnlong;
                                                     
-                        var docLink='dbs/' + databaseId + '/colls/' + collectionId + '/docs/'+docs[0].id;
+                        var docLink='dbs/' + databaseId + '/colls/' + collectionId + '/docs/'+docs1[0].id;
                         
-                        client.replaceDocument(docLink, docs[0], function (err, updated) {
+                        client.replaceDocument(docLink, docs1[0], function (err, updated) {
                             if (err) 
                             {
-                                throw (err);
+                                callback ("error","err");
                             } 
                             else
                             {
-                                 response.json({ "success" : "Current location updated successfully."});
+                                callback("Success","Current location updated successfully.")                                 
                             }
                         });                 
                     }                
-               });
-             }
-    });
-    });
-    });
+               });        
+    } 
     
  module.exports = router;
