@@ -39,7 +39,7 @@ var client = new DocumentDBClient(host, { masterKey: authKey });
  });
  
  
- router.get('/getallridedetails/:userid',function(request, response, next){  
+ router.get('/getallridedetails/:userid/:currentdate',function(request, response, next){  
     readOrCreateDatabase(function (database) {
         readOrCreateCollection(database, function (collection) {           
                 getAllRideDetails(request,collection, function (docs) {  
@@ -65,7 +65,7 @@ var client = new DocumentDBClient(host, { masterKey: authKey });
 
 
 var getAllRideDetails = function(request,collection,callback){  
-  var query ='SELECT u.id,u.userName,u.rides FROM users u WHERE u.id="'+request.params.userid+'"';
+   var query ='SELECT u.id,u.userName,u.rides FROM users u join r in u.rides WHERE u.id="'+request.params.userid+'" and r.startdate="'+request.params.currentdate+'"';
 //    console.log(query);
     client.queryDocuments(collection._self,query).toArray(function (err, docs) {
         if (err) {
@@ -436,7 +436,8 @@ var searchrides= function (request,collection,callback) {
     ' where contains  (s.address, "'+destination+'")';*/
     var query ='SELECT u.id,r.rideid,b.lat,b.lng,b.address,r.startdatetime,r.enddatetime from  users u '+
                'join r in u.rides join b in  r.boardingpoints '+
-               'where contains  (b.address, "'+destination+'") or contains  (r.address, "'+destination+'")'; 
+               'where contains  (b.address, "'+destination+'") or contains  (r.address, "'+destination+'")'+
+               'AND r.seatsavailable > 0'; 
  
    client.queryDocuments(collection._self,query).toArray(function (err, docs) {
         if (err) {
@@ -683,7 +684,7 @@ var getNotifications =  function (request,collection,callback) {
                 ' join r in u.rides '+ 
                 ' join p in r.passengers '+ 
                 ' join b in r.boardingpoints '+
-                ' where r.ridestatus = "open" and u.id ="'+userid +'"and b.boardingid = p.boardingid and contains(r.startdatetime,"'+startdatetime+'")';           
+                ' where r.ridestatus = "open" and u.id ="'+userid +'"and b.boardingid = p.boardingid and r.startdate ="'+startdatetime+'"';           
      }
                 
     //console.log(query);
@@ -755,6 +756,15 @@ router.post('/rideconfirmation',function (request, response) {
                             {
                                if(docs[0].rides[i].ridestatus=="open" && docs[0].rides[i].rideid == request.body.rideid)
                                {
+                                   var seatsavailable=docs[0].rides[i].seatsavailable;
+                                   if (request.body.status=="accepted" && seatsavailable > 0 && seatsavailable <= docs[0].rides[i].totalseats)
+                                   {
+                                           docs[0].rides[i].seatsavailable=  seatsavailable - 1;
+                                   }
+                                   else if (request.body.status=="rejected" && seatsavailable < docs[0].rides[i].totalseats)
+                                   {
+                                           docs[0].rides[i].seatsavailable=  seatsavailable + 1;
+                                   }
                                    for(var j=0; j<docs[0].rides[i].passengers.length; j++)
                                    {
                                        if(docs[0].rides[i].passengers[j].userid == request.body.userid)
