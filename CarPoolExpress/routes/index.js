@@ -698,7 +698,7 @@ var getNotifications =  function (request,collection,callback) {
     });
 }
 
-router.get('/receivenotitifications/:userid', function(request, response, next) { 
+router.get('/receivenotitifications/:userid/:startdatetime', function(request, response, next) { 
     response.header("Access-Control-Allow-Origin", '*');   
     readOrCreateDatabase(function (database) {
         readOrCreateCollection(database, function (collection) {           
@@ -720,11 +720,10 @@ var receivenotitifications =  function (request,collection,callback) {
      else
      {
          var userid =request.params.userid;
-         //var startdatetime =request.params.startdatetime;
+         var startdatetime =request.params.startdatetime;
         
        query =  'SELECT u.id as ownerid,u.userName as ownername,u.mobile,u.photo, r.rideid,r.startdatetime,p.status, p.isownercurrentlocnallowed FROM users u join r in u.rides join p in r.passengers ' + 
-        'where r.ridestatus = "open" and p.userid = "' + userid +'"';    
-        //and contains(r.startdatetime,"'+ startdatetime + '")       
+        'where r.ridestatus = "open" and p.userid = "' + userid +'" and r.startdate ="'+startdatetime+'"';    
      }
                 
     //console.log(query);

@@ -1,6 +1,6 @@
 {
-    "HOST"       : "https://wiprodocumentdb.documents.azure.com:443/",
-    "AUTH_KEY"   : "1Mgo+Is7xOYMI14BEEQsJcL9iArwGdUImn5Vfop1jAaSGOnAT0aJwBfkG+VUlSMHxHotAdlayEB3hzYwjK+pFQ==",
+    "HOST"       : "https://wiprocarpool.documents.azure.com:443/",
+    "AUTH_KEY"   : "8wY9wClyoy8CMNJ7Nd6wo671sN1mnbPmHuEyJI6JbtZSQvr+ONbwVHBDv2tsuvFZDinqjSfrIX6CQ0ADuO7ZBg==",
     "DATABASE"   : "WiproCarpool",
     "COLLECTION" : "users",
     "ErrorLogCollection" : "applogs" 
