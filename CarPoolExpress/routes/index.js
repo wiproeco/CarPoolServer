@@ -224,7 +224,7 @@ var getAllRideDetails = function(request,collection,callback){
    
  }); 
  
-  router.get('/searchrides/:destination',function(request, response, next) {   
+  router.get('/searchrides/:destination/:userId/:startdatetime',function(request, response, next) {   
     readOrCreateDatabase(function (database) {
         readOrCreateCollection(database, function (collection) {           
                 searchrides(request,collection, function (docs) {  
@@ -432,11 +432,14 @@ var getItem = function(request,collection,callback){
 
 var searchrides= function (request,collection,callback) {
     var destination =request.params.destination;
+    var userId=request.params.userId;
+    var startdatetime=request.params.startdatetime;
   /* var query= 'SELECT s.address,s.lat,s.lng,u.ride u.id,l.startpoint,l.endpoint,l.endlat,l.endlng'+' from users u'+' join l in u.location '+' join s in u.pickuplocations '+
     ' where contains  (s.address, "'+destination+'")';*/
     var query ='SELECT u.id,r.rideid,b.lat,b.lng,b.address,r.startdatetime,r.enddatetime from  users u '+
                'join r in u.rides join b in  r.boardingpoints '+
-               'where r.seatsavailable > 0 AND (contains  (b.address, "'+destination+'") or contains  (r.address, "'+destination+'"))';
+               'where r.seatsavailable > 0 AND (contains  (b.address, "'+destination+'") or contains  (r.startpoint, "'+destination+'") or contains  (r.endpoint, "'+destination+'"))' +
+               'AND u.id!="'+userId +'" and r.startdate ="'+startdatetime+'" AND r.ridestatus = "open"';
                  
    client.queryDocuments(collection._self,query).toArray(function (err, docs) {
         if (err) {
