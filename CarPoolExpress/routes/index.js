@@ -436,9 +436,8 @@ var searchrides= function (request,collection,callback) {
     ' where contains  (s.address, "'+destination+'")';*/
     var query ='SELECT u.id,r.rideid,b.lat,b.lng,b.address,r.startdatetime,r.enddatetime from  users u '+
                'join r in u.rides join b in  r.boardingpoints '+
-               'where contains  (b.address, "'+destination+'") or contains  (r.address, "'+destination+'")'+
-               'AND r.seatsavailable > 0'; 
- 
+               'where r.seatsavailable > 0 AND (contains  (b.address, "'+destination+'") or contains  (r.address, "'+destination+'"))';
+                 
    client.queryDocuments(collection._self,query).toArray(function (err, docs) {
         if (err) {
             // console.log(err);
