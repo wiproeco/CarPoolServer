@@ -438,7 +438,7 @@ var searchrides= function (request,collection,callback) {
     ' where contains  (s.address, "'+destination+'")';*/
     var query ='SELECT u.id,r.rideid,b.lat,b.lng,b.address,r.startdatetime,r.enddatetime from  users u '+
                'join r in u.rides join b in  r.boardingpoints '+
-               'where r.seatsavailable > 0 AND (contains  (b.address, "'+destination+'") or contains  (r.startpoint, "'+destination+'") or contains  (r.endpoint, "'+destination+'"))' +
+               'where r.seatsavailable > 0 AND (contains  (b.address, "'+destination+'") or contains  (r.startpoint, "'+destination+'"))' +
                'AND u.id!="'+userId +'" and r.startdate ="'+startdatetime+'" AND r.ridestatus = "open"';
                  
    client.queryDocuments(collection._self,query).toArray(function (err, docs) {
