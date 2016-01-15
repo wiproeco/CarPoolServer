@@ -879,31 +879,167 @@ router.get('/getuserdetails/:userid',function(request, response, next){
     
  var updateCarlocationstatus = function(request,collection,callback){
          checkitemforlocation(request,collection,function(docs1)
+            {                    
+                if (docs1 == undefined || docs1 == null || docs1.length == 0 || (docs1.length == 1 && docs1[0] == ""))
+                {                       
+                        callback("error", 'No user exists with that id'); 
+                }
+                else
+                {        
+                    docs1[0].currgeolocnaddress=request.body.currgeolocnaddress;
+                    docs1[0].currgeolocnlat=request.body.currgeolocnlat; 
+                    docs1[0].currgeolocnlong = request.body.currgeolocnlong;
+                                                
+                    var docLink='dbs/' + databaseId + '/colls/' + collectionId + '/docs/'+docs1[0].id;
+                    
+                    client.replaceDocument(docLink, docs1[0], function (err, updated) {
+                        if (err) 
+                        {
+                            callback ("error","err");
+                        } 
+                        else
+                        {
+                            callback("Success","Current location updated successfully.")                                 
+                        }
+                    });                 
+                }                
+            });        
+    } 
+    
+     router.get('/getrideshistory/:id/:isowner' ,function(request, response, next){  
+    readOrCreateDatabase(function (database) {
+        readOrCreateCollection(database, function (collection) {           
+                getridesHistory(request,collection, function (docs) { 
+               response.json(docs);              
+            });    
+        });
+     });
+ });
+ 
+    var getridesHistory = function(request,collection,callback){ 
+        var rideshistory={rides:[]};
+    if(request.params.isowner==="true"){
+        var query ='SELECT u.rides FROM users u WHERE u.id="'+request.params.id+'" and u.isowner='+request.params.isowner+'';   
+        client.queryDocuments(collection._self,query).toArray(function (err, docs) {
+            if (err) {
+                throw (err);
+            }   
+            
+            if(docs.length>0){
+                for(var i=0;i<docs[0].rides.length;i++){
+                    var enddatetime=Date.now();
+                    if(docs[0].rides[i].enddatetime<enddatetime){
+                    rideshistory.rides.push({"StartPoint":docs[0].rides[i].startpoint, "EndPoint":docs[0].rides[i].endpoint, "Status":docs[0].rides[i].ridestatus, "EndDate":docs[0].rides[i].enddatetime });
+                    }
+                }
+            }
+            callback(rideshistory);
+        });
+    }else{
+            var query1 ='SELECT u.rides FROM users u';   
+            client.queryDocuments(collection._self,query1).toArray(function (err, docs) {
+                if (err) {
+                    throw (err);
+                }   
+                if(docs.length>0){
+                    for(var x=0;x<docs.length;x++){
+                            for(var y=0;y<docs[x].rides.length;y++){
+                                for(var z=0;z<docs[x].rides[y].passengers.length;z++){
+                                    if(docs[x].rides[y].passengers[z].userid===request.params.id){
+                                    rideshistory.rides.push({"StartPoint":docs[x].rides[y].startpoint, "EndPoint":docs[x].rides[y].endpoint, "Status":docs[x].rides[y].ridestatus, "EndDate":docs[x].rides[y].enddatetime });
+                                }
+                                }
+                            }
+                        }
+                    }
+                    callback(rideshistory);
+            });
+        };
+    }
+    
+      // Update the user/owner profile details.
+    router.get('/UpdateProfileDetails/:id',function(request,response) {              
+        readOrCreateDatabase(function (database) {
+            readOrCreateCollection(database,function(collection) {
+                var query ='SELECT * FROM users u WHERE u.id="'+request.params.id+'"';   
+                  client.queryDocuments(collection._self,query).toArray(function (err, docs) {
+                     if (err) {
+                         throw (err);
+                      }     
+                     response.json(docs);                     
+               });                
+              });                                          
+        });
+    });
+    
+    // Change password for user/owner 
+    router.post('/updatePassword',function(request,response){
+       readOrCreateDatabase(function (database) {
+        readOrCreateCollection(database, function (collection) {              
+             if (request.body) {
+                 checkitem(request,collection,function(docs)
                 {                    
-                    if (docs1 == undefined || docs1 == null || docs1.length == 0 || (docs1.length == 1 && docs1[0] == ""))
+                    if (docs == undefined || docs == null || docs.length == 0 || (docs.length == 1 && docs[0] == ""))
                     {                       
-                         callback("error", 'No user exists with that id'); 
+                         response.end('No user exists with that id'); 
                     }
                     else
-                    {        
-                        docs1[0].currgeolocnaddress=request.body.currgeolocnaddress;
-                        docs1[0].currgeolocnlat=request.body.currgeolocnlat; 
-                        docs1[0].currgeolocnlong = request.body.currgeolocnlong;
-                                                    
-                        var docLink='dbs/' + databaseId + '/colls/' + collectionId + '/docs/'+docs1[0].id;
-                        
-                        client.replaceDocument(docLink, docs1[0], function (err, updated) {
+                    {      
+                        docs[0].password = request.body.password;
+                        var docLink='dbs/' + databaseId + '/colls/' + collectionId + '/docs/'+docs[0].id;
+                            client.replaceDocument(docLink, docs[0], function (err, updated) {
                             if (err) 
                             {
-                                callback ("error","err");
+                                throw (err);
                             } 
                             else
-                            {
-                                callback("Success","Current location updated successfully.")                                 
+                            {                                
+                                response.json({"password": "Password has been changed"});
                             }
-                        });                 
-                    }                
-               });        
-    } 
+                         
+                         }); 
+                    }
+                });
+             }
+            });
+         });      
+     });   
+    
+    // Save the Edit profile details
+    router.post('/SaveProfile',function(request,response){
+         readOrCreateDatabase(function (database) {
+        readOrCreateCollection(database, function (collection) {              
+             if (request.body) {
+                 checkitem(request,collection,function(docs)
+                {                    
+                    if (docs == undefined || docs == null || docs.length == 0 || (docs.length == 1 && docs[0] == ""))
+                    {                       
+                         response.end('No user exists with that id'); 
+                    }
+                    else
+                    {      
+                        docs[0].userName=request.body.username;
+                        docs[0].email=request.body.email;
+                        docs[0].mobile=request.body.mobile;                        
+                        
+                        var docLink='dbs/' + databaseId + '/colls/' + collectionId + '/docs/'+docs[0].id;
+                            client.replaceDocument(docLink, docs[0], function (err, updated) {
+                            if (err) 
+                            {
+                                throw (err);
+                            } 
+                            else
+                            {                                
+                                response.json({"updated": "updated successfully"});
+                            }
+                         
+                         }); 
+                    }
+                });
+             }
+            });
+         });
+        
+        });      
     
  module.exports = router;
