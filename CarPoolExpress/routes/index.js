@@ -432,14 +432,63 @@ var getItem = function(request,collection,callback){
 
 var searchrides= function (request,collection,callback) {
     var destination =request.params.destination;
+    var destArray = destination.split(',');
+    var uniqueDestinations = uniqueList(destArray)
+
     var userId=request.params.userId;
     var startdatetime=request.params.startdatetime;
-  /* var query= 'SELECT s.address,s.lat,s.lng,u.ride u.id,l.startpoint,l.endpoint,l.endlat,l.endlng'+' from users u'+' join l in u.location '+' join s in u.pickuplocations '+
-    ' where contains  (s.address, "'+destination+'")';*/
-    var query ='SELECT u.id,r.rideid,b.lat,b.lng,b.address,r.startdatetime,r.enddatetime from  users u '+
-               'join r in u.rides join b in  r.boardingpoints '+
-               'where r.seatsavailable > 0 AND (contains  (b.address, "'+destination+'") or contains  (r.startpoint, "'+destination+'"))' +
-               'AND u.id!="'+userId +'" and r.startdate ="'+startdatetime+'" AND r.ridestatus = "open"';
+  
+  if(uniqueDestinations.length > 0)
+    {
+        // First value - search name check if both are diff
+        searchList(collection,userId,startdatetime, uniqueDestinations,0, function(data){
+            if(data.length > 0)
+            {
+                callback(data);
+            }else if(uniqueDestinations.length > 1){
+                // First value - search vincity check if both are diff
+                searchList(collection,userId,startdatetime, uniqueDestinations,1, function(data){
+                    if(data.length > 0)
+                        {
+                            callback(data);
+                        }
+                    });
+            }else if(uniqueDestinations.length > 2){
+                // First value - search vincity check if both are diff
+                searchList(collection,userId,startdatetime, uniqueDestinations,2, function(data){
+                    if(data.length > 0)
+                        {
+                            callback(data);
+                        }
+                    });
+            } else{
+                callback("No matching rides available for your search criteria.");
+            }
+            
+        });
+    }
+}
+function uniqueList(data) {
+    var prims = {"boolean":{}, "number":{}, "string":{}}, objs = [];
+
+    return data.filter(function(item) {
+        var type = typeof item;
+        if(type in prims)
+            return prims[type].hasOwnProperty(item) ? false : (prims[type][item] = true);
+        else
+            return objs.indexOf(item) >= 0 ? false : objs.push(item);
+    });
+}
+function searchList(collection,userId,startdatetime,destination,index, callback)
+{
+     var query ='SELECT u.id,r.rideid,b.lat,b.lng,b.address,r.startdatetime,r.enddatetime from  users u '+
+               'join r in u.rides '+
+               'join b in  r.boardingpoints '+
+               'join p in r.passengers '+ 
+               'where r.seatsavailable > 0 AND (contains  (b.address, "'+destination[index]+'") or contains  (r.startpoint, "'+destination[index]+'"))' +
+               ' AND u.id!="'+userId +'" and r.startdate ="'+startdatetime+'" '+
+               ' AND r.ridestatus = "open" and u.isowner=true ';//+
+               //'and p.userid!="'+userId +'" and p.status in ("rejected","canceled") ';
                  
    client.queryDocuments(collection._self,query).toArray(function (err, docs) {
         if (err) {
@@ -449,9 +498,7 @@ var searchrides= function (request,collection,callback) {
         
         callback(docs);
     });
-    
 }
-
 
 var listsharedrides =  function (request,collection,callback) {
     var query =""; 
@@ -474,7 +521,7 @@ var listsharedrides =  function (request,collection,callback) {
                 'join l in u.location '+
                 'join p in u.setlocation '+
                 'where  contains (l.startpoint,"'+source+'")'+'and contains (l.endpoint,"'+destination+'")'+
-                ' and u.isowner="true"';                
+                ' and u.isowner=true';                
      }
                 
    // console.log(query);
@@ -724,7 +771,7 @@ var receivenotitifications =  function (request,collection,callback) {
          var userid =request.params.userid;
          var startdatetime =request.params.startdatetime;
         
-       query =  'SELECT u.id as ownerid,u.userName as ownername,u.mobile,u.photo, r.rideid,r.startdatetime,p.status, p.isownercurrentlocnallowed FROM users u join r in u.rides join p in r.passengers ' + 
+       query =  'SELECT u.id as ownerid,u.userName as ownername,u.mobile,u.photo, r.rideid,r.startdatetime,p.status,p.userid as passengerid, p.isownercurrentlocnallowed FROM users u join r in u.rides join p in r.passengers ' + 
         'where r.ridestatus = "open" and p.userid = "' + userid +'" and r.startdate ="'+startdatetime+'"';    
      }
                 
@@ -758,14 +805,19 @@ router.post('/rideconfirmation',function (request, response) {
                                if(docs[0].rides[i].ridestatus=="open" && docs[0].rides[i].rideid == request.body.rideid)
                                {
                                    var seatsavailable=docs[0].rides[i].seatsavailable;
-                                   if (request.body.status=="accepted" && seatsavailable > 0 && seatsavailable <= docs[0].rides[i].totalseats)
+                                   if (request.body.status=="accepted") 
                                    {
+                                       if (seatsavailable > 0 && seatsavailable <= docs[0].rides[i].totalseats)
+                                       {
                                            docs[0].rides[i].seatsavailable=  seatsavailable - 1;
+                                       }else{
+                                           request.body.status="rejected";
+                                       }
                                    }
-                                   else if (request.body.status=="rejected" && seatsavailable < docs[0].rides[i].totalseats)
+                                  /* else if (request.body.status=="rejected" && seatsavailable < docs[0].rides[i].totalseats)
                                    {
                                            docs[0].rides[i].seatsavailable=  seatsavailable + 1;
-                                   }
+                                   }*/
                                    for(var j=0; j<docs[0].rides[i].passengers.length; j++)
                                    {
                                        if(docs[0].rides[i].passengers[j].userid == request.body.userid)
@@ -909,7 +961,7 @@ router.get('/getuserdetails/:userid',function(request, response, next){
             });        
     } 
     
-     router.get('/getrideshistory/:id/:isowner' ,function(request, response, next){  
+     router.get('/getrideshistory/:id/:isowner/:currenttime' ,function(request, response, next){   
     readOrCreateDatabase(function (database) {
         readOrCreateCollection(database, function (collection) {           
                 getridesHistory(request,collection, function (docs) { 
@@ -930,8 +982,8 @@ router.get('/getuserdetails/:userid',function(request, response, next){
             
             if(docs.length>0){
                 for(var i=0;i<docs[0].rides.length;i++){
-                    var enddatetime=Date.now();
-                    if(docs[0].rides[i].enddatetime<enddatetime){
+                   // var enddatetime=Date.now();
+                    if(docs[0].rides[i].enddatetime<request.params.currenttime){
                     rideshistory.rides.push({"StartPoint":docs[0].rides[i].startpoint, "EndPoint":docs[0].rides[i].endpoint, "Status":docs[0].rides[i].ridestatus, "EndDate":docs[0].rides[i].enddatetime });
                     }
                 }
@@ -949,7 +1001,9 @@ router.get('/getuserdetails/:userid',function(request, response, next){
                             for(var y=0;y<docs[x].rides.length;y++){
                                 for(var z=0;z<docs[x].rides[y].passengers.length;z++){
                                     if(docs[x].rides[y].passengers[z].userid===request.params.id){
+                                        if(docs[x].rides[y].enddatetime<request.params.currenttime){
                                     rideshistory.rides.push({"StartPoint":docs[x].rides[y].startpoint, "EndPoint":docs[x].rides[y].endpoint, "Status":docs[x].rides[y].ridestatus, "EndDate":docs[x].rides[y].enddatetime });
+                                        }
                                 }
                                 }
                             }
@@ -1035,14 +1089,95 @@ router.get('/getuserdetails/:userid',function(request, response, next){
                             {                                
                                 response.json({"updated": "updated successfully"});
                             }
-                         
-                         }); 
-                    }
-                });
-             }
-            });
-         });
-        
-        });      
+                        }); 
+                     }
+                  });
+               }
+           });
+       });
+   }); 
+   
+// Get Email Ids.
+    router.get('/CheckEmail/:Email',function(request,response) {              
+        readOrCreateDatabase(function (database) {
+            readOrCreateCollection(database,function(collection) {
+                var query ='SELECT u.email FROM users u where u.email="'+request.params.Email+'"';   
+                  client.queryDocuments(collection._self,query).toArray(function (err, docs) {
+                     if (err) {
+                         throw (err);
+                      }     
+                     response.json(docs);                     
+               });                
+              });                                          
+        });
+    });
     
+   // Get Usernames.
+    router.get('/CheckUsername/:userName',function(request,response) {              
+        readOrCreateDatabase(function (database) {
+            readOrCreateCollection(database,function(collection) {
+                var query ='SELECT u.userName FROM users u where u.userName="'+request.params.userName+'"';   
+                  client.queryDocuments(collection._self,query).toArray(function (err, docs) {
+                     if (err) {
+                         throw (err);
+                      }     
+                     response.json(docs);                     
+               });                
+              });                                          
+        });
+    }); 
+
+router.post('/cancelriderequest',function (request, response) { 
+      response.header("Access-Control-Allow-Origin", '*');  
+    readOrCreateDatabase(function (database) {
+        readOrCreateCollection(database, function (collection) {              
+             if (request.body) {
+                 checkitem(request,collection,function(docs)
+                {                    
+                    if (docs == undefined || docs == null || docs.length == 0 || (docs.length == 1 && docs[0] == ""))
+                    {                       
+                         response.end('No user exists with that id'); 
+                    }
+                    else
+                    {                             
+                            /* TODO :   DO R&D on conditional docLink-Conditional replacement*/
+                            for(var i=0;i<docs[0].rides.length;i++)
+                            {
+                               if(docs[0].rides[i].ridestatus=="open" && docs[0].rides[i].rideid == request.body.rideid)
+                               {
+                                   for(var j=0; j<docs[0].rides[i].passengers.length; j++)
+                                   {
+                                       if(docs[0].rides[i].passengers[j].userid == request.body.userid)
+                                       {
+                                           if (docs[0].rides[i].passengers[j].status=="accepted")
+                                           {
+                                               var seatsavailable=docs[0].rides[i].seatsavailable;
+                                               docs[0].rides[i].seatsavailable= seatsavailable + 1;
+                                           }
+                                           docs[0].rides[i].passengers[j].status = request.body.status;
+                                       }
+                                   }
+                               }
+                            }     
+                            
+                            var docLink='dbs/' + databaseId + '/colls/' + collectionId + '/docs/'+docs[0].id;
+                            client.replaceDocument(docLink, docs[0], function (err, updated) {
+                            if (err) 
+                            {
+                                throw (err);
+                            } 
+                            else
+                            {
+                                response.json({ "success" : "Canceled the ride request"});
+                            }
+                        });
+                     // console.log('done');
+                    }                
+               });
+             
+             }
+      });
+    });
+  }); 
+     
  module.exports = router;
