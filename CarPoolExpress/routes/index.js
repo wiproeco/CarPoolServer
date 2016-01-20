@@ -430,7 +430,7 @@ var getItem = function(request,collection,callback){
     });
 }
 
-var searchrides= function (request,collection,callback) {
+ var searchrides= function (request,collection,callback) {
     var destination =request.params.destination;
     var destArray = destination.split(',');
     var uniqueDestinations = uniqueList(destArray)
@@ -484,10 +484,10 @@ function searchList(collection,userId,startdatetime,destination,index, callback)
      var query ='SELECT u.id,r.rideid,b.lat,b.lng,b.address,r.startdatetime,r.enddatetime from  users u '+
                'join r in u.rides '+
                'join b in  r.boardingpoints '+
-               'join p in r.passengers '+ 
-               'where r.seatsavailable > 0 AND (contains  (b.address, "'+destination[index]+'") or contains  (r.startpoint, "'+destination[index]+'"))' +
+               //'join p in r.passengers '+ 
+               'where contains  (b.address, "'+destination[index]+'") or contains  (r.startpoint, "'+destination[index]+'")' +
                ' AND u.id!="'+userId +'" and r.startdate ="'+startdatetime+'" '+
-               ' AND r.ridestatus = "open" and u.isowner=true ';//+
+               ' AND r.ridestatus = "open" and u.isowner=true and r.seatsavailable > 0';//+
                //'and p.userid!="'+userId +'" and p.status in ("rejected","canceled") ';
                  
    client.queryDocuments(collection._self,query).toArray(function (err, docs) {
@@ -1076,7 +1076,8 @@ router.get('/getuserdetails/:userid',function(request, response, next){
                     else
                     {      
                         docs[0].userName=request.body.username;
-                        docs[0].email=request.body.email;
+                        docs[0].isowner=request.body.isowner;
+                        docs[0].carNo=request.body.carNo;
                         docs[0].mobile=request.body.mobile;                        
                         
                         var docLink='dbs/' + databaseId + '/colls/' + collectionId + '/docs/'+docs[0].id;
