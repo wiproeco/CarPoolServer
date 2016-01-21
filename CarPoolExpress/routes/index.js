@@ -485,7 +485,7 @@ function searchList(collection,userId,startdatetime,destination,index, callback)
                'join r in u.rides '+
                'join b in  r.boardingpoints '+
                //'join p in r.passengers '+ 
-               'where contains  (b.address, "'+destination[index]+'") or contains  (r.startpoint, "'+destination[index]+'")' +
+               'where (contains  (b.address, "'+destination[index]+'") or contains  (r.startpoint, "'+destination[index]+'"))' +
                ' AND u.id!="'+userId +'" and r.startdate ="'+startdatetime+'" '+
                ' AND r.ridestatus = "open" and u.isowner=true and r.seatsavailable > 0';//+
                //'and p.userid!="'+userId +'" and p.status in ("rejected","canceled") ';
@@ -820,7 +820,7 @@ router.post('/rideconfirmation',function (request, response) {
                                    }*/
                                    for(var j=0; j<docs[0].rides[i].passengers.length; j++)
                                    {
-                                       if(docs[0].rides[i].passengers[j].userid == request.body.userid)
+                                       if(docs[0].rides[i].passengers[j].userid == request.body.userid && docs[0].rides[i].passengers[j].status=="pending")
                                        {
                                            docs[0].rides[i].passengers[j].status = request.body.status;
                                             docs[0].rides[i].passengers[j].isownercurrentlocnallowed = request.body.reqforcurrgeolocn;                       
