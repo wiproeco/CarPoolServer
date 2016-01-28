@@ -1036,6 +1036,48 @@ router.get('/getuserdetails/:userid',function(request, response, next){
         });
     });
     
+     // Upgrade User to Owner.
+    router.post('/UpgradeUsertoOwner',function(request,response) {              
+        readOrCreateDatabase(function (database) {
+            readOrCreateCollection(database,function(collection) {
+                
+                /// checking and upgrading the owner details;
+                 if (request.body) {
+                 checkitem(request,collection,function(docs)
+                {                    
+                    if (docs == undefined || docs == null || docs.length == 0 || (docs.length == 1 && docs[0] == ""))
+                    {                       
+                         response.end('No user exists with that id'); 
+                    }
+                    else
+                    {      
+                        docs[0].isowner =  request.body.isowner;
+                        docs[0].carNo =  request.body.CarNumber;
+                        docs[0].totalseats =  request.body.totalseats;
+                        
+                         request.body.password
+                       // docs[0].password = request.body.password;
+                        var docLink='dbs/' + databaseId + '/colls/' + collectionId + '/docs/'+docs[0].id;
+                            client.replaceDocument(docLink, docs[0], function (err, updated) {
+                            if (err) 
+                            {
+                                throw (err);
+                            } 
+                            else
+                            {                                
+                                response.json({"Upgrade": "User has upgraded successfully"});
+                            }
+                         
+                         }); 
+                    }
+                });
+                 }
+                
+                               
+              });                                          
+        });
+    });
+    
     // Change password for user/owner 
     router.post('/updatePassword',function(request,response){
        readOrCreateDatabase(function (database) {
