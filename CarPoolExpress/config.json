@@ -1,7 +1,7 @@
 {
-    "HOST"       : "https://wiprocarpool.documents.azure.com:443/",
-    "AUTH_KEY"   : "8wY9wClyoy8CMNJ7Nd6wo671sN1mnbPmHuEyJI6JbtZSQvr+ONbwVHBDv2tsuvFZDinqjSfrIX6CQ0ADuO7ZBg==",
-    "DATABASE"   : "WiproCarpool",
+    "HOST"       : "https://wiprocarpooldb.documents.azure.com:443/",
+    "AUTH_KEY"   : "k9Kj16/zLDqWk6cBG2jkX+4ZYf36kF/5CM+/zHcIVbgY5/lURz/SZAJ2IM0rmj/A1J/TMog1vwrXhlESTmOQAA==",
+    "DATABASE"   : "WiproCarpooldb",
     "COLLECTION" : "users",
     "ErrorLogCollection" : "applogs" 
 }

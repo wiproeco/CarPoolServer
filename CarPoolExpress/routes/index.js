@@ -548,7 +548,7 @@ var listsharedrides =  function (request,collection,callback) {
 // }
 
 var createItem = function (collection, documentDefinition, callback) {
-    documentDefinition.completed = false;
+    //documentDefinition.completed = false;
     client.createDocument(collection._self, documentDefinition, function (err, doc) {
         if (err) {
             throw (err);
@@ -617,8 +617,15 @@ router.post('/cancelride',function (request, response) {
                             {
                                if(docs[0].rides[i].ridestatus=="open" && docs[0].rides[i].rideid == request.body.rideid)
                                {
-                                    docs[0].rides[i].ridestatus ="close";
-                                // console.log(docs[0].rides[i].rideid);
+                                   for(var j=0; j<docs[0].rides[i].passengers.length; j++)
+                                   {
+                                       if(docs[0].rides[i].passengers[j].status=="pending" || docs[0].rides[i].passengers[j].status=="accepted")
+                                       {
+                                           docs[0].rides[i].passengers[j].status = "canceled";
+                                       }
+                                   }
+                                 docs[0].rides[i].ridestatus ="canceled";
+                                 break;
                                }
                             }     
                             
@@ -733,7 +740,7 @@ var getNotifications =  function (request,collection,callback) {
                 ' join r in u.rides '+ 
                 ' join p in r.passengers '+ 
                 ' join b in r.boardingpoints '+
-                ' where r.ridestatus = "open" and u.id ="'+userid +'"and b.boardingid = p.boardingid and r.startdate ="'+startdatetime+'"';           
+                ' where r.ridestatus in ("open","canceled") and u.id ="'+userid +'"and b.boardingid = p.boardingid and r.startdate ="'+startdatetime+'"';           
      }
                 
     //console.log(query);
@@ -772,7 +779,7 @@ var receivenotitifications =  function (request,collection,callback) {
          var startdatetime =request.params.startdatetime;
         
        query =  'SELECT u.id as ownerid,u.userName as ownername,u.mobile,u.photo, r.rideid,r.startdatetime,p.status,p.userid as passengerid, p.isownercurrentlocnallowed FROM users u join r in u.rides join p in r.passengers ' + 
-        'where r.ridestatus = "open" and p.userid = "' + userid +'" and r.startdate ="'+startdatetime+'"';    
+        'where r.ridestatus in ("open","canceled") and p.userid = "' + userid +'" and r.startdate ="'+startdatetime+'"';    
      }
                 
     //console.log(query);
@@ -804,27 +811,27 @@ router.post('/rideconfirmation',function (request, response) {
                             {
                                if(docs[0].rides[i].ridestatus=="open" && docs[0].rides[i].rideid == request.body.rideid)
                                {
-                                   var seatsavailable=docs[0].rides[i].seatsavailable;
-                                   if (request.body.status=="accepted") 
-                                   {
-                                       if (seatsavailable > 0 && seatsavailable <= docs[0].rides[i].totalseats)
-                                       {
-                                           docs[0].rides[i].seatsavailable=  seatsavailable - 1;
-                                       }else{
-                                           request.body.status="rejected";
-                                       }
-                                   }
-                                  /* else if (request.body.status=="rejected" && seatsavailable < docs[0].rides[i].totalseats)
-                                   {
-                                           docs[0].rides[i].seatsavailable=  seatsavailable + 1;
-                                   }*/
                                    for(var j=0; j<docs[0].rides[i].passengers.length; j++)
                                    {
-                                       if(docs[0].rides[i].passengers[j].userid == request.body.userid && docs[0].rides[i].passengers[j].status=="pending")
+                                       if(docs[0].rides[i].passengers[j].userid == request.body.userid && (docs[0].rides[i].passengers[j].status=="pending" || docs[0].rides[i].passengers[j].status=="accepted"))
                                        {
+                                           var seatsavailable=docs[0].rides[i].seatsavailable;
+                                            if (request.body.status=="accepted") 
+                                            {
+                                                if (seatsavailable > 0 && seatsavailable <= docs[0].rides[i].totalseats)
+                                                {
+                                                    docs[0].rides[i].seatsavailable=  seatsavailable - 1;
+                                                }else{
+                                                    request.body.status="rejected";
+                                                }
+                                            } 
+                                            else if (request.body.status=="rejected" && docs[0].rides[i].passengers[j].status=="accepted" && seatsavailable < docs[0].rides[i].totalseats)
+                                           {
+                                            docs[0].rides[i].seatsavailable=  seatsavailable + 1;
+                                           }
                                            docs[0].rides[i].passengers[j].status = request.body.status;
-                                            docs[0].rides[i].passengers[j].isownercurrentlocnallowed = request.body.reqforcurrgeolocn;                       
-                                           //console.log(docs[0].rides[i].passengers[j].Status);
+                                           docs[0].rides[i].passengers[j].isownercurrentlocnallowed = request.body.reqforcurrgeolocn;
+                                           break;                       
                                        }
                                    }
                                }
@@ -923,7 +930,7 @@ router.get('/getuserdetails/:userid',function(request, response, next){
              {   
                  updateCarlocationstatus(request,collection,function(message)
                  {
-                     var x=message;
+                     //var x=message;
                      response.json({ "success" : message});
                  });           
            
@@ -1148,7 +1155,7 @@ router.post('/cancelriderequest',function (request, response) {
                                {
                                    for(var j=0; j<docs[0].rides[i].passengers.length; j++)
                                    {
-                                       if(docs[0].rides[i].passengers[j].userid == request.body.userid)
+                                     if(docs[0].rides[i].passengers[j].userid == request.body.userid && (docs[0].rides[i].passengers[j].status=="pending" || docs[0].rides[i].passengers[j].status=="accepted"))
                                        {
                                            if (docs[0].rides[i].passengers[j].status=="accepted")
                                            {
@@ -1156,6 +1163,7 @@ router.post('/cancelriderequest',function (request, response) {
                                                docs[0].rides[i].seatsavailable= seatsavailable + 1;
                                            }
                                            docs[0].rides[i].passengers[j].status = request.body.status;
+                                           break;
                                        }
                                    }
                                }
